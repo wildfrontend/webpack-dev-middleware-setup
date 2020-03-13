@@ -1,19 +1,28 @@
 const express = require('express')
 const webpack = require('webpack')
 const webpackDevMiddleware = require('webpack-dev-middleware')
+const { createProxyMiddleware } = require('http-proxy-middleware')
 
 const app = express()
 const config = require('../webpack.config.js')
 const compiler = webpack(config)
 
-// 告诉 express 使用 webpack-dev-middleware，
-// 以及将 webpack.config.js 配置文件作为基础配置
 app.use(
     webpackDevMiddleware(compiler, {
         publicPath: config.output.publicPath,
     }),
 )
-
+app.use(
+    '/signalr/**',
+    createProxyMiddleware({
+        target: 'http://localhost:62678/',
+        pathRewrite: { '^/signalr': '' },
+        secure: false,
+        logLevel: 'debug',
+        ws: true,
+        changeOrigin: true,
+    }),
+)
 app.use(express.static('public'))
 
 // 将文件 serve 到 port 3000。
